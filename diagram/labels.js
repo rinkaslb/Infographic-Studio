@@ -17,6 +17,52 @@ function captureLabelLayout(index,target){
   for(const [name,value] of Object.entries({'data-label-center-x':center,'data-label-center-y':b.y+b.height/2,'data-label-max-width':width,'data-label-base-size':baseSize,'data-label-baseline':baseline,'data-label-original-start':b.x}))target.setAttribute(name,String(Math.round(value*1000)/1000));
  }catch(e){/* Unsupported geometry keeps the original positioning. */}
 }
+// A tag's authored radius is its reusable token, not a function of its new width.
+const TAG_RADIUS_TOKEN='data-tag-radius';
+function fixedTagRadius(node,source){
+ if(node.localName!=='rect')return;
+ let token=source.getAttribute(TAG_RADIUS_TOKEN);
+ if(token===null){
+  const resolve=(name,dimension)=>{const value=source.getAttribute(name);if(value===null||value==='auto')return null;return value.endsWith('%')?parseFloat(value)*dimension/100:parseFloat(value);};
+  const view=node.ownerSVGElement.viewBox.baseVal;
+  let rx=resolve('rx',view.width),ry=resolve('ry',view.height);
+  if(rx===null&&ry===null)return;
+  rx=rx??ry;ry=ry??rx;
+  // Freeze SVG's initial radius clamp before changing the rectangle's width.
+  rx=Math.min(rx,+node.getAttribute('width')/2);ry=Math.min(ry,+node.getAttribute('height')/2);
+  if(!Number.isFinite(rx)||!Number.isFinite(ry))return;
+  token=rx+' '+ry;
+ }
+ const [rx,ry]=token.split(' ');
+ for(const n of [node,source]){n.setAttribute(TAG_RADIUS_TOKEN,token);n.setAttribute('rx',rx);n.setAttribute('ry',ry);}
+}
+function resizeTagPath(path,center,delta){
+ if(!delta)return path;
+ // Move the right-hand corners intact. Only spans across the tag's middle grow.
+ // Absolute coordinates also let relative paths and compound border outlines share this rule.
+ const tokens=path.match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g)||[];
+ const sizes={M:2,L:2,H:1,V:1,C:6,S:4,Q:4,T:2,A:7},out=[];
+ let i=0,command='',x=0,y=0,startX=0,startY=0;
+ const shift=v=>v>center?v+delta:v;
+ while(i<tokens.length){
+  if(/^[a-zA-Z]$/.test(tokens[i]))command=tokens[i++];
+  const kind=command.toUpperCase(),relative=command!==kind;
+  if(kind==='Z'){out.push('Z');x=startX;y=startY;command='';continue;}
+  const size=sizes[kind];if(!size||i+size>tokens.length)throw new Error('Unsupported tag path');
+  const values=tokens.slice(i,i+size).map(Number);if(values.some(v=>!Number.isFinite(v)))throw new Error('Invalid tag path');i+=size;
+  if(kind==='H'){x=values[0]+(relative?x:0);out.push('H'+shift(x));}
+  else if(kind==='V'){y=values[0]+(relative?y:0);out.push('V'+y);}
+  else{
+   const first=kind==='A'?5:0;
+   for(let j=first;j<size;j+=2){values[j]+=relative?x:0;values[j+1]+=relative?y:0;}
+   x=values[size-2];y=values[size-1];
+   for(let j=first;j<size;j+=2)values[j]=shift(values[j]);
+   out.push(kind+values.join(' '));
+   if(kind==='M'){startX=x;startY=y;command=relative?'l':'L';}
+  }
+ }
+ return out.join(' ');
+}
 function fitDiagramLabels(svg){
  if(!svg)return;const doc=parser.parseFromString(original,'image/svg+xml'),source=doc.documentElement,labels=editableSvgLabels(svg),targets=editableSvgLabels(source),all=[...svg.querySelectorAll('rect,path')],raw=[...source.querySelectorAll('rect,path')],records=[];
  const baseView=(source.getAttribute('data-v10-base-viewbox')||source.getAttribute('viewBox')).split(/[ ,]+/).map(Number);source.setAttribute('data-v10-base-viewbox',baseView.join(' '));
@@ -25,7 +71,7 @@ function fitDiagramLabels(svg){
  const icons=svgIconNodes(svg),sourceIcons=svgIconNodes(source);
  icons.forEach(n=>{if(n.hasAttribute('data-label-icon-base-transform')){const t=n.getAttribute('data-label-icon-base-transform');t?n.setAttribute('transform',t):n.removeAttribute('transform');}});
  // Restore base geometry before measuring, preventing growth from accumulating on every render.
- all.forEach(n=>{if(n.hasAttribute('data-tag-base-width'))n.setAttribute('width',n.getAttribute('data-tag-base-width'));if(n.hasAttribute('data-tag-base-transform')){const t=n.getAttribute('data-tag-base-transform');t?n.setAttribute('transform',t):n.removeAttribute('transform');}});
+ all.forEach(n=>{if(n.hasAttribute('data-tag-base-path'))n.setAttribute('d',n.getAttribute('data-tag-base-path'));if(n.hasAttribute('data-tag-base-width'))n.setAttribute('width',n.getAttribute('data-tag-base-width'));if(n.hasAttribute('data-tag-base-transform')){const t=n.getAttribute('data-tag-base-transform');t?n.setAttribute('transform',t):n.removeAttribute('transform');}});
  labels.forEach((node,i)=>{if(!node.hasAttribute('data-label-center-x')||typeof node.getComputedTextLength!=='function')return;
   try{const target=targets[i],size=+node.getAttribute('data-label-base-size'),cx=+node.getAttribute('data-label-center-x'),cy=+node.getAttribute('data-label-center-y'),baseline=+node.getAttribute('data-label-baseline'),available=+node.getAttribute('data-label-max-width');node.setAttribute('font-size',size);node.setAttribute('x',cx);node.setAttribute('y',baseline);node.setAttribute('text-anchor','middle');node.removeAttribute('dx');node.removeAttribute('dy');
    const local=n=>{const b=n.getBBox(),m=node.getCTM().inverse().multiply(n.getCTM());return {x:m.a*b.x+m.c*b.y+m.e,y:m.b*b.x+m.d*b.y+m.f,width:Math.abs(m.a*b.width)+Math.abs(m.c*b.height),height:Math.abs(m.b*b.width)+Math.abs(m.d*b.height)};};
@@ -49,7 +95,41 @@ function fitDiagramLabels(svg){
    if(originalIcon){const base=originalIcon.getAttribute('data-label-icon-base-transform')??originalIcon.getAttribute('transform')??'';const m=n.parentNode.getCTM().inverse().multiply(r.node.getCTM());const transform='translate('+(m.a*shift)+' '+(m.b*shift)+') '+base;n.setAttribute('data-label-icon-base-transform',base);originalIcon.setAttribute('data-label-icon-base-transform',base);n.setAttribute('transform',transform);originalIcon.setAttribute('transform',transform);}
   }
   r.node.setAttribute('text-anchor','start');r.node.setAttribute('x',left);r.node.setAttribute('font-size',r.size);const b=r.node.getBBox();r.node.setAttribute('y',r.baseline+r.cy-(b.y+b.height/2));
-  if(r.card){const cb=r.card.b;right=Math.max(right,cb.x+cb.width+delta+12);const borders=r.shapes.filter(({b})=>Math.abs(b.x-cb.x)<4&&Math.abs(b.y-cb.y)<4&&Math.abs(b.width-cb.width)<5&&Math.abs(b.height-cb.height)<5);borders.forEach(({node:n})=>{const j=all.indexOf(n),originalNode=raw[j];if(!originalNode)return;if(n.localName==='rect'){const baseWidth=+(originalNode.getAttribute('data-tag-base-width')||n.getAttribute('width'));n.setAttribute('data-tag-base-width',baseWidth);originalNode.setAttribute('data-tag-base-width',baseWidth);n.setAttribute('width',baseWidth+delta);originalNode.setAttribute('width',baseWidth+delta);return;}const baseTransform=originalNode.getAttribute('data-tag-base-transform')??originalNode.getAttribute('transform')??'';originalNode.setAttribute('data-tag-base-transform',baseTransform);n.setAttribute('data-tag-base-transform',baseTransform);const q=n.getBBox(),factor=(q.width+delta)/Math.max(q.width,1);const transform='translate('+q.x+' 0) scale('+factor+' 1) translate('+(-q.x)+' 0) '+baseTransform;n.setAttribute('transform',transform);originalNode.setAttribute('transform',transform);});}
+  if(r.card){
+   const cb=r.card.b;right=Math.max(right,cb.x+cb.width+delta+12);
+   const borders=r.shapes.filter(({b})=>Math.abs(b.x-cb.x)<4&&Math.abs(b.y-cb.y)<4&&Math.abs(b.width-cb.width)<5&&Math.abs(b.height-cb.height)<5);
+   const borderNodes=new Set(borders.map(({node})=>node));
+   // Figma's filled border outlines use masks; their geometry must grow with the fill.
+   borders.forEach(({node:n})=>{
+    for(const name of ['mask','clip-path']){
+     const id=(n.getAttribute(name)||'').match(/url\(["']?#([^"')]+)["']?\)/)?.[1];
+     const definition=id?svg.getElementById(id):null;
+     if(definition)definition.querySelectorAll('rect,path').forEach(shape=>{
+      const b=shape.getBBox(),q=n.getBBox();
+      if(Math.abs(b.x-q.x)<4&&Math.abs(b.y-q.y)<4&&Math.abs(b.width-q.width)<5&&Math.abs(b.height-q.height)<5)borderNodes.add(shape);
+     });
+    }
+   });
+   borderNodes.forEach(n=>{
+    const originalNode=raw[all.indexOf(n)];if(!originalNode)return;
+    const matrix=r.node.getCTM().inverse().multiply(n.getCTM()),localDelta=delta/Math.max(Math.abs(matrix.a),.000001);
+    if(n.localName==='rect'){
+     fixedTagRadius(n,originalNode);
+     const baseWidth=+(originalNode.getAttribute('data-tag-base-width')||n.getAttribute('width'));
+     for(const shape of [n,originalNode]){shape.setAttribute('data-tag-base-width',baseWidth);shape.setAttribute('width',baseWidth+localDelta);}
+     return;
+    }
+    const baseTransform=originalNode.getAttribute('data-tag-base-transform')??originalNode.getAttribute('transform')??'';
+    const basePath=originalNode.getAttribute('data-tag-base-path')??originalNode.getAttribute('d'),q=n.getBBox();
+    const center=+(originalNode.getAttribute('data-tag-base-center')??q.x+q.width/2);
+    const resized=resizeTagPath(basePath,center,localDelta);
+    for(const shape of [n,originalNode]){
+     shape.setAttribute('data-tag-base-transform',baseTransform);shape.setAttribute('data-tag-base-path',basePath);shape.setAttribute('data-tag-base-center',center);
+     baseTransform?shape.setAttribute('transform',baseTransform):shape.removeAttribute('transform');
+     shape.setAttribute('d',resized);
+    }
+   });
+  }
   const target=r.target;target.removeAttribute('dx');target.removeAttribute('dy');for(const attr of ['x','y','font-size','text-anchor'])target.setAttribute(attr,r.node.getAttribute(attr));
  }catch(e){}});
  const view=[baseView[0],baseView[1],right-baseView[0],baseView[3]].join(' ');svg.setAttribute('viewBox',view);source.setAttribute('viewBox',view);if(source.hasAttribute('width'))source.setAttribute('width',right-baseView[0]);

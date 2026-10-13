@@ -30,5 +30,5 @@ $('projectFile').onchange=async e=>{try{
  if(workflow==='story'){$('effect').value='auto';$('duration').value=clamp(s.duration,300,5000,1200);$('trigger').value=trigger(s.trigger);$('strength').value=clamp(s.strength,1,10,3);$('reduced').checked=!!s.reduced;animationMode=s.mode==='nodes'?'nodes':'entire';}
  previewVersion=generatedStory&&p.v4?.previewVersion!=='original'?'story':'original';baseTuning=currentTuning();
  $('source').textContent='SAVED PROJECT';selection=-1;syncWorkflow();
- document.querySelectorAll('.template').forEach(b=>b.setAttribute('aria-pressed','false'));showLayers();render();drawSvgLabels();notice('Project loaded.');
+ document.querySelectorAll('.template').forEach(b=>b.setAttribute('aria-pressed','false'));showLayers();render();drawSvgLabels();if(!generatedStory)generate();else if(previewVersion==='story')animate();notice('Project loaded.');
 }catch(err){notice(err.message);}finally{e.target.value='';}};

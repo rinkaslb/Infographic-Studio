@@ -1,3 +1,8 @@
 'use strict';
-// V21: behavior-preserving extraction; compatibility globals remain in phase 1.
-choose(0);fontReady.then(async ok=>{if(ok){if(document.fonts?.ready)await document.fonts.ready;refreshLibraryFraming();render();drawSvgLabels();}});$('generateStory').disabled=true;engineReady.then(ok=>{$('generateStory').disabled=!ok;if(!ok)notice('GSAP could not load. Connect to the internet and reopen the studio.');});
+choose(0);
+// A selection made while dependencies load remains the active selection.
+Promise.all([fontReady,engineReady]).then(async ([fontLoaded,engineLoaded])=>{
+ if(fontLoaded){if(document.fonts?.ready)await document.fonts.ready;refreshLibraryFraming();drawSvgLabels();}
+ if(!engineLoaded){notice('GSAP could not load. Connect to the internet and reopen the studio.');return;}
+ if(!generatedStory)generate();else{const previewing=previewVersion==='story';render();if(previewing)animate();}
+});

@@ -11,18 +11,16 @@ function syncWorkflow(){
  $('diagramName').textContent='';$('source').hidden=true;
  $('takeaway').textContent='';$('takeaway').hidden=true;
  $('storyResult').hidden=true;syncMainTuning();
- const dirty=generatedStory&&generatedStory.goal!==$('storyPreset').value;
- $('draftStatus').textContent=dirty?'Style changed. Apply the animation to update the preview.':generatedStory?'Animation ready':'Select an animation style.';
- $('draftStatus').classList.toggle('ready',!!generatedStory&&!dirty);
+ $('draftStatus').textContent='';$('draftStatus').hidden=true;
 }
 
 Object.assign(recipes,{
-recover:{headline:'Explore the tags.',takeaway:'',beats:['Lift the source','Lift the process','Lift the outcome']},
-protect:{headline:'Follow the relationships.',takeaway:'',beats:['Focus the source','Follow its connections','Focus the outcome']},
-connect:{headline:'Explore the layers.',takeaway:'',beats:['Separate the source','Separate the process','Separate the outcome']},
-converge:{headline:'Explore the diagram.',takeaway:'',beats:['Approach the source','Approach the process','Approach the outcome']},
-generate:{headline:'Read the story.',takeaway:'',beats:['Read the source','Read the process','Read the outcome']},
-validate:{headline:'Explore the connections.',takeaway:'',beats:['Draw an incoming path','Trace the connections','Complete the relationship']}
+recover:{headline:'Show information progressively.',takeaway:'',beats:['Reveal the source','Reveal the process','Reveal the outcome']},
+protect:{headline:'Follow the path of information.',takeaway:'',beats:['Activate the source','Follow the signal','Reach every destination']},
+connect:{headline:'Construct diagrams step-by-step.',takeaway:'',beats:['Introduce the center','Extend the structure','Complete the diagram']},
+converge:{headline:'Elements gather to a focal point.',takeaway:'',beats:['Identify the elements','Gather attention','Focus the diagram']},
+generate:{headline:'Reveal and label content.',takeaway:'',beats:['Discover the source','Annotate the process','Reveal the outcome']},
+validate:{headline:'Build relationships first.',takeaway:'',beats:['Establish the network','Introduce connected elements','Complete the relationships']}
 });
 function currentTuning(){return {effect:$('effect').value,trigger:$('trigger').value,duration:+$('duration').value,strength:+$('strength').value,reduced:$('reduced').checked,mode:animationMode,layers:[...selected],roles:{...manualRoles}};}
 function applyTuning(t){$('effect').value=t.effect;$('trigger').value=t.trigger;$('duration').value=t.duration;$('strength').value=t.strength;$('reduced').checked=t.reduced;animationMode=t.mode;selected=new Set(t.layers);manualRoles={...t.roles};captureWorkflow();}
@@ -41,9 +39,8 @@ function markBeat(index){[...$('storyBeats').children].forEach((b,i)=>b.setAttri
 function inspectBeat(index){if(!generatedStory)return;if($('effect').value==='auto'){if(previewVersion==='original'){previewVersion='story';render();}stop();storyRuntime?.previewBeat(index);return;}if(previewVersion==='original'){previewVersion='story';render();}stop();markBeat(index);const indices=generatedStory.beats[index].indices;document.querySelectorAll('.story-layer').forEach(n=>n.classList.toggle('beat-inspect',indices.includes(+n.dataset.layerIndex)));}
 function setPreview(version){previewVersion=version==='story'&&generatedStory?'story':'original';render();}
 function generate(){
- if(!selected.size){notice('Choose Individual objects in Animation Settings and select an object.');return;}
  const goal=$('storyPreset').value,r=recipes[goal];generatedStory={goal,headline:r.headline,takeaway:r.takeaway,beats:r.beats.map((text,stage)=>({text,stage,focus:defaultFocus(goal,stage),duration:+$('duration').value,indices:[]}))};
- $('effect').value='auto';$('trigger').value='hover';workflow='story';previewVersion='story';baseTuning=currentTuning();captureWorkflow();drawBeats();showLayers();render();animate();
+ $('effect').value='auto';workflow='story';previewVersion='story';baseTuning=currentTuning();captureWorkflow();drawBeats();showLayers();render();animate();
 }
 function openFine(){closeExport();migrateGlobalMotion();animationMode='nodes';render();drawerOpener=document.activeElement;$('fineDrawer').hidden=$('fineBackdrop').hidden=false;mountFinePreview();document.querySelector('main').inert=true;document.querySelector('header').inert=true;$('closeFine').focus();}
 function closeFine(){fineRuntime?.destroy();fineRuntime=null;timelinePreviewRuntime?.destroy();timelinePreviewRuntime=null;document.querySelector('main').inert=false;document.querySelector('header').inert=false;$('fineDrawer').hidden=$('fineBackdrop').hidden=true;drawerOpener?.focus();}

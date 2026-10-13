@@ -55,7 +55,7 @@ Use JSDoc contracts and runtime validation initially; adding a compiler is unnec
 - `AnimationRuntime`: `play()`, `previewBeat()`, `reset()`, `destroy()` and access to its seekable timeline. Interactive release remains owned by the runtime.
 - `ExportRequest`: format, captured project/settings, runtime assets, cancellation signal and progress callback.
 
-Preserve the public runtime methods during every phase. Do not rename serialized preset IDs such as `recover` merely because the visible style is Riffle. Keep visible labels separate from project identifiers.
+Preserve the public runtime methods during every phase. Do not rename serialized preset IDs such as `recover` merely because the visible style is Reveal. Keep visible labels separate from project identifiers.
 
 The function map documents every top-level named function and the important anonymous handlers. Nested runtime helpers remain inside their self-contained runtime until runtime packaging is implemented.
 
@@ -95,7 +95,7 @@ The target pipeline is:
 
 Each style exposes `appendToTimeline(context)`. The context supplies the timeline, beat window, active objects, resolved relationships, settings, authored-state access and invisible mask/clip helpers. Effects do not read `$()` or modify story data.
 
-For Branches and Cables, `diagram/geometry.js` supplies the resolved graph. Animation schedules it. For Scan, diagram processing identifies labels; animation reveals them. For Magnet, the interaction controller supplies root-space pointer coordinates and owns live tracking; generated playback remains a deterministic timeline for capture.
+For Flow and Connections, `diagram/geometry.js` supplies the resolved graph. Animation schedules it. For Scan, diagram processing identifies labels; animation reveals them. For Magnet, the interaction controller supplies root-space pointer coordinates and owns live tracking; generated playback remains a deterministic timeline for capture.
 
 **Critical export constraint:** V20 embeds runtime functions with `.toString()`. Extracting their nested helpers into unrelated globals would break standalone HTML. Phase 1 keeps both factories self-contained. Before splitting styles/effects out, implement `runtime-package.js` so exports include the exact same helpers and style implementations as the editor. The packaged runtime must execute with only its SVG, configuration, GSAP and browser APIs. It must not reference editor controls, module paths or project-store globals.
 

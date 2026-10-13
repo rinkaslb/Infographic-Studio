@@ -13,4 +13,4 @@ assert len(assets(html))==12
 assert (root/'ui/studio.css').read_text(encoding='utf-8')==re.search(r'<style>(.*?)</style>',legacy,re.S).group(1)
 report=json.loads((root/'docs/baseline.json').read_text(encoding='utf-8'))
 assert hashlib.sha256((root/'standalone-v20.html').read_bytes()).hexdigest()==report['v20Sha256']
-print('PASS: local resources, script order, stylesheet, 12 diagrams and unchanged V20 fallback.')
+print('PASS: local resources, script order, stylesheet, 12 diagrams and V20 fallback with current branding.')

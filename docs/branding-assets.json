@@ -1,0 +1,54 @@
+{
+  "reference": "https://www.acronis.com/en/",
+  "stylesheet": "https://www.acronis.com/public/assets/fonts/fonts.css?v=10.7.1",
+  "font": {
+    "url": "https://www.acronis.com/public/assets/fonts/bin/Acronis_Cyber-VF.woff2",
+    "sha256": "bd75457c6171396359b3288a00131d018042ac08a665228d86de253c63d6bf06",
+    "type": "font/woff2"
+  },
+  "fontFace": {
+    "family": "Acronis Cyber",
+    "weight": "1 999",
+    "style": "normal",
+    "display": "swap"
+  },
+  "faviconAssets": [
+    {
+      "url": "https://www.acronis.com/public/favicon/favicon-180x180.png",
+      "sha256": "803043d27d9c0504036006605299624cc1c5211f3f177e21317b891068ee4961",
+      "type": "image/png",
+      "tag": "<link rel=\"icon\" type=\"image/png\" href=\"/public/favicon/favicon-180x180.png\" sizes=\"180x180\" />"
+    },
+    {
+      "url": "https://www.acronis.com/public/favicon/favicon-96x96.png",
+      "sha256": "42d2a5b489dfd080ead3812481afd97ad53c34b16cb35273811468435c8253ee",
+      "type": "image/png",
+      "tag": "<link rel=\"icon\" type=\"image/png\" href=\"/public/favicon/favicon-96x96.png\" sizes=\"96x96\" />"
+    },
+    {
+      "url": "https://www.acronis.com/public/favicon/favicon-48x48.png",
+      "sha256": "1d725264ff20d0a3c8ca74d867d82f5742bd6ff4bd7188ad08858120e59d2cee",
+      "type": "image/png",
+      "tag": "<link rel=\"icon\" type=\"image/png\" href=\"/public/favicon/favicon-48x48.png\" sizes=\"48x48\" />"
+    },
+    {
+      "url": "https://www.acronis.com/public/favicon/favicon.svg",
+      "sha256": "8173b3083c6e6af2118523089c145a44f6f3dcffaaf5ebc8f9b2b2ea645a97a8",
+      "type": "image/svg+xml",
+      "tag": "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/public/favicon/favicon.svg\" />"
+    },
+    {
+      "url": "https://www.acronis.com/public/favicon/favicon.ico",
+      "sha256": "394e6eb06d763f01dcfb756dd2c451e687b3297ce4f7e821f55af04315c0ddc4",
+      "type": "image/x-icon",
+      "tag": "<link rel=\"shortcut icon\" href=\"/public/favicon/favicon.ico\" />"
+    },
+    {
+      "url": "https://www.acronis.com/public/favicon/apple-touch-icon.png",
+      "sha256": "e585e7d7e85e8f616dc9eed3584f14224de89c50cfe9f8fe7e36146ada3d4ed3",
+      "type": "image/png",
+      "tag": "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/public/favicon/apple-touch-icon.png\" />"
+    }
+  ],
+  "packaging": "Exact website font and icons embedded as data URLs for development, production, standalone HTML and vector/raster exports."
+}

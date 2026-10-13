@@ -197,6 +197,8 @@
     "functions": [
       "initializeDiagramLabels",
       "captureLabelLayout",
+      "fixedTagRadius",
+      "resizeTagPath",
       "fitDiagramLabels"
     ],
     "sourceStart": 745,

@@ -8,7 +8,7 @@ function render(){
  $('canvas').setAttribute('role',s.mode==='nodes'?'group':'img');
  let style=$('motionStyle');if(!style){style=document.createElement('style');style.id='motionStyle';document.head.append(style);}
  style.textContent=extendedMotionCss(s);$('durationValue').textContent=s.duration+' ms';document.querySelector('label[for=duration]').textContent=s.workflow==='story'?'Transition duration':'Duration';
- $('strengthValue').textContent=s.strength<=3?'Subtle':s.strength<=6?'Balanced':'Expressive';
+ $('strengthValue').textContent=s.strength+' / 10';
  refreshStoryCopy();if(generatedStory&&previewVersion==='story')storyRuntime=s.workflow==='story'?createNarrativeRuntime($('canvas'),s,storyPhase):createStoryRuntime($('canvas'),s,storyPhase);if(generatedStory)drawBeats();drawTimeline();syncPreviewTone();
 }
 function showLayers(){
@@ -21,7 +21,7 @@ function showLayers(){
   cb.onchange=()=>{if(background)return;cb.checked?selected.add(i):selected.delete(i);showLayers();render();drawSvgLabels();};label.append(cb,name);
   const role=document.createElement('select');role.className='role-select';role.setAttribute('aria-label','Role for '+layerName(n,i));
   const auto=document.createElement('option');auto.value='auto';auto.textContent='Auto · '+roles[i];role.append(auto);
-  const contextual={recover:['Items','Recovery','Restored outcome'],protect:['Workloads','Protection','Protected state'],connect:['Starting nodes','Relationship nodes','Connected nodes'],converge:['Workloads','Console','Unified view'],generate:['Request','Generator','Result'],validate:['Input','Verification','Status']}[generatedStory?.goal||$('storyPreset').value];roleNames.forEach((r,j)=>{const o=document.createElement('option');o.value=r;o.textContent=contextual[j]||r;role.append(o);});
+  const contextual={recover:['First items','Following items','Final items'],protect:['Source nodes','Relay nodes','Destination nodes'],connect:['Starting elements','Construction steps','Completed elements'],converge:['Attracted elements','Focal point','Focused elements'],generate:['Discovery source','Identified elements','Annotated elements'],validate:['Network source','Connected elements','Connected outcomes']}[generatedStory?.goal||$('storyPreset').value];roleNames.forEach((r,j)=>{const o=document.createElement('option');o.value=r;o.textContent=contextual[j]||r;role.append(o);});
   if(background){role.replaceChildren();const staticOption=document.createElement('option');staticOption.value='static';staticOption.textContent='Static';role.append(staticOption);role.disabled=true;}role.value=background?'static':manualRoles[i]||'auto';role.onchange=()=>{if(background)return;if(role.value==='auto')delete manualRoles[i];else manualRoles[i]=role.value;showLayers();render();};
   row.append(label,role);$('layers').append(row);
  });
