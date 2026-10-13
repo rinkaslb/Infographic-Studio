@@ -1,0 +1,16 @@
+'use strict';
+// V21: behavior-preserving extraction; compatibility globals remain in phase 1.
+function drawTimeline(){
+ $('timelineBeats').replaceChildren();$('timelinePlay').disabled=!generatedStory;
+ if(!generatedStory){$('timelineStatus').textContent='Apply an animation to edit its timeline.';return;}
+ $('timelineStatus').textContent='Changes update the animation and its exports.';
+ generatedStory.beats.forEach((beat,i)=>{const row=document.createElement('div');row.className='timeline-row';const head=document.createElement('div');head.className='timeline-row-head';const name=document.createElement('span');name.textContent='Step '+(i+1)+' · '+beat.text;head.append(name);
+ for(const [text,label,fn,disabled] of [['▶','Preview step '+(i+1),()=>previewTimeline(i),false],['↑','Move step '+(i+1)+' earlier',()=>moveBeat(i,-1),i===0],['↓','Move step '+(i+1)+' later',()=>moveBeat(i,1),i===2]]){const b=document.createElement('button');b.textContent=text;b.setAttribute('aria-label',label);b.disabled=disabled;b.onclick=fn;head.append(b);}
+ const label=document.createElement('label');label.className='timeline-duration';label.setAttribute('for','beatDuration'+i);label.textContent='Duration · seconds';const input=document.createElement('input');input.id='beatDuration'+i;input.type='number';input.min=.3;input.max=5;input.step=.1;input.value=(beat.duration??1000)/1000;input.onchange=()=>{const value=+input.value;if(!Number.isFinite(value))return;beat.duration=Math.round(Math.max(.3,Math.min(5,value))*1000);updateTimeline();};label.append(input);const focusLabel=document.createElement('label');focusLabel.className='timeline-focus';focusLabel.textContent='Visual focus';focusLabel.setAttribute('for','beatFocus'+i);const select=document.createElement('select');select.id='beatFocus'+i;for(const [value,text] of Object.entries(focusNames)){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}select.value=beat.focus||defaultFocus(generatedStory.goal,beat.stage??i);select.onchange=()=>{beat.focus=select.value;updateTimeline();};focusLabel.append(select);row.append(head,label,focusLabel);$('timelineBeats').append(row);
+ });
+}
+function moveBeat(index,delta){const next=index+delta;if(next<0||next>2)return;[generatedStory.beats[index],generatedStory.beats[next]]=[generatedStory.beats[next],generatedStory.beats[index]];updateTimeline();}
+function updateTimeline(){const showing=!$('timelineFrame').hidden;timelinePreviewRuntime?.destroy();timelinePreviewRuntime=null;drawBeats();render();if(showing)previewTimeline();}
+function previewTimeline(index=null){if(!generatedStory||!globalThis.gsap)return;timelinePreviewRuntime?.destroy();$('timelineFrame').hidden=false;const figure=$('timelineCanvas');figure.innerHTML=preparedSvg(true,'timeline-');const s={...settings(),workflow:'story',preset:generatedStory.goal,mode:'entire',trigger:'click',override:false};figure.dataset.effect='auto';figure.dataset.mode='entire';timelinePreviewRuntime=createNarrativeRuntime(figure,s,(phase,complete)=>{$('timelineStatus').textContent=phase<0?'Changes update the animation and its exports.':complete?'Preview complete':'Playing · '+generatedStory.beats[phase].text;});timelinePreviewRuntime.play(index);}
+$('timelinePlay').onclick=()=>previewTimeline();
+

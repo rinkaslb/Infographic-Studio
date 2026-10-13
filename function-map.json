@@ -1,0 +1,363 @@
+[
+  {
+    "file": "utils/dom.js",
+    "functions": [],
+    "sourceStart": 1,
+    "sourceEnd": 3
+  },
+  {
+    "file": "core/dependencies.js",
+    "functions": [],
+    "sourceStart": 3,
+    "sourceEnd": 15
+  },
+  {
+    "file": "state/session.js",
+    "functions": [
+      "defaultFocus"
+    ],
+    "sourceStart": 15,
+    "sourceEnd": 38
+  },
+  {
+    "file": "core/workflow.js",
+    "functions": [
+      "captureWorkflow",
+      "syncObjectControls",
+      "syncWorkflow",
+      "currentTuning",
+      "applyTuning",
+      "resetDraft",
+      "updateMappings",
+      "drawBeats",
+      "markBeat",
+      "inspectBeat",
+      "setPreview",
+      "generate",
+      "openFine",
+      "closeFine"
+    ],
+    "sourceStart": 38,
+    "sourceEnd": 86
+  },
+  {
+    "file": "diagram/roles.js",
+    "functions": [
+      "canvasBackground",
+      "isBackgroundLayer",
+      "activeLayers",
+      "defaultSelection",
+      "layerName",
+      "inferRoles",
+      "inferredRoles"
+    ],
+    "sourceStart": 86,
+    "sourceEnd": 139
+  },
+  {
+    "file": "core/story-controller.js",
+    "functions": [
+      "storySettings",
+      "storyPhase",
+      "refreshStoryCopy",
+      "setMode"
+    ],
+    "sourceStart": 139,
+    "sourceEnd": 143
+  },
+  {
+    "file": "utils/serialization.js",
+    "functions": [
+      "safeJson",
+      "escapeHtml"
+    ],
+    "sourceStart": 143,
+    "sourceEnd": 148
+  },
+  {
+    "file": "animation/narrative-runtime.js",
+    "functions": [
+      "createNarrativeRuntime"
+    ],
+    "sourceStart": 148,
+    "sourceEnd": 349
+  },
+  {
+    "file": "animation/legacy-runtime.js",
+    "functions": [
+      "createStoryRuntime",
+      "extendedMotionCss"
+    ],
+    "sourceStart": 349,
+    "sourceEnd": 501
+  },
+  {
+    "file": "diagram/parse-layers.js",
+    "functions": [
+      "cleanSvg",
+      "legacyLayerNodes",
+      "previousLayerNodes",
+      "v3LayerNodes",
+      "layerNodes"
+    ],
+    "sourceStart": 501,
+    "sourceEnd": 603
+  },
+  {
+    "file": "state/selectors.js",
+    "functions": [
+      "settings"
+    ],
+    "sourceStart": 603,
+    "sourceEnd": 607
+  },
+  {
+    "file": "animation/controls.js",
+    "functions": [
+      "stop",
+      "animate",
+      "motionCss"
+    ],
+    "sourceStart": 607,
+    "sourceEnd": 610
+  },
+  {
+    "file": "diagram/prepare.js",
+    "functions": [
+      "preparedSvg"
+    ],
+    "sourceStart": 610,
+    "sourceEnd": 631
+  },
+  {
+    "file": "ui/canvas.js",
+    "functions": [
+      "render",
+      "showLayers"
+    ],
+    "sourceStart": 631,
+    "sourceEnd": 657
+  },
+  {
+    "file": "ui/library.js",
+    "functions": [
+      "choose",
+      "notice"
+    ],
+    "sourceStart": 657,
+    "sourceEnd": 659
+  },
+  {
+    "file": "utils/download.js",
+    "functions": [
+      "filename",
+      "download"
+    ],
+    "sourceStart": 659,
+    "sourceEnd": 661
+  },
+  {
+    "file": "ui/editor-bindings.js",
+    "functions": [],
+    "sourceStart": 661,
+    "sourceEnd": 681
+  },
+  {
+    "file": "export/html.js",
+    "functions": [
+      "exportInteractiveHtml"
+    ],
+    "sourceStart": 681,
+    "sourceEnd": 693
+  },
+  {
+    "file": "ui/export-menu.js",
+    "functions": [
+      "closeExport"
+    ],
+    "sourceStart": 693,
+    "sourceEnd": 697
+  },
+  {
+    "file": "state/project-files.js",
+    "functions": [],
+    "sourceStart": 697,
+    "sourceEnd": 729
+  },
+  {
+    "file": "ui/goal-cards.js",
+    "functions": [
+      "bindGoalPreview"
+    ],
+    "sourceStart": 729,
+    "sourceEnd": 745
+  },
+  {
+    "file": "diagram/labels.js",
+    "functions": [
+      "initializeDiagramLabels",
+      "captureLabelLayout",
+      "fitDiagramLabels"
+    ],
+    "sourceStart": 745,
+    "sourceEnd": 803
+  },
+  {
+    "file": "diagram/icons.js",
+    "functions": [
+      "svgIconNodes",
+      "drawSvgIcons",
+      "replaceSvgIcon"
+    ],
+    "sourceStart": 803,
+    "sourceEnd": 814
+  },
+  {
+    "file": "ui/label-editor.js",
+    "functions": [
+      "editableSvgLabels",
+      "drawSvgLabels"
+    ],
+    "sourceStart": 814,
+    "sourceEnd": 818
+  },
+  {
+    "file": "export/jobs.js",
+    "functions": [
+      "exportProgress",
+      "exportCheck",
+      "runAssetExport"
+    ],
+    "sourceStart": 818,
+    "sourceEnd": 824
+  },
+  {
+    "file": "export/capture.js",
+    "functions": [
+      "localPaintRefs",
+      "snapshotSvg",
+      "svgString",
+      "svgPixels",
+      "exportSize",
+      "createExportCapture",
+      "cycleTime"
+    ],
+    "sourceStart": 824,
+    "sourceEnd": 836
+  },
+  {
+    "file": "export/png.js",
+    "functions": [
+      "exportPngFrame"
+    ],
+    "sourceStart": 836,
+    "sourceEnd": 837
+  },
+  {
+    "file": "export/animated-svg.js",
+    "functions": [
+      "exportAnimatedSvg"
+    ],
+    "sourceStart": 837,
+    "sourceEnd": 853
+  },
+  {
+    "file": "utils/binary.js",
+    "functions": [
+      "binaryJoin"
+    ],
+    "sourceStart": 853,
+    "sourceEnd": 854
+  },
+  {
+    "file": "export/apng.js",
+    "functions": [
+      "pngU32",
+      "pngChunk",
+      "pngDeflate",
+      "pngHeader",
+      "pngFrameControl",
+      "exportAnimatedPng"
+    ],
+    "sourceStart": 854,
+    "sourceEnd": 865
+  },
+  {
+    "file": "export/gif.js",
+    "functions": [
+      "gifPalette",
+      "gifIndices",
+      "gifLzw",
+      "gifU16",
+      "gifHeader",
+      "gifFrame",
+      "exportGifPixels",
+      "exportAnimatedGif"
+    ],
+    "sourceStart": 865,
+    "sourceEnd": 885
+  },
+  {
+    "file": "ui/main-tuning.js",
+    "functions": [
+      "syncMainTuning",
+      "updateMainTuning"
+    ],
+    "sourceStart": 885,
+    "sourceEnd": 889
+  },
+  {
+    "file": "state/object-settings.js",
+    "functions": [
+      "readObjectTuning",
+      "objectConfig"
+    ],
+    "sourceStart": 889,
+    "sourceEnd": 893
+  },
+  {
+    "file": "diagram/theme-frame.js",
+    "functions": [
+      "resolvedTone",
+      "normalizeDiagramFrame",
+      "refreshLibraryFraming",
+      "applyExampleTone",
+      "exportBackdrop",
+      "detectedTone",
+      "syncPreviewTone",
+      "setPreviewTone"
+    ],
+    "sourceStart": 893,
+    "sourceEnd": 960
+  },
+  {
+    "file": "ui/fine-tune.js",
+    "functions": [
+      "objectDisplayName",
+      "migrateGlobalMotion",
+      "drawFineObjects",
+      "mountFinePreview",
+      "selectFineObject",
+      "updateFineObject"
+    ],
+    "sourceStart": 960,
+    "sourceEnd": 971
+  },
+  {
+    "file": "ui/timeline.js",
+    "functions": [
+      "drawTimeline",
+      "moveBeat",
+      "updateTimeline",
+      "previewTimeline"
+    ],
+    "sourceStart": 971,
+    "sourceEnd": 985
+  },
+  {
+    "file": "core/bootstrap.js",
+    "functions": [],
+    "sourceStart": 985,
+    "sourceEnd": 986
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "baseline": "V20",
+  "v20Sha256": "aca3775771902cf27f44d14f40027cde21cc520827006ea69bfe1735b5c79ea2",
+  "scripts": 38,
+  "functionalChecksPassed": 67,
+  "browserVisualVerification": false
+}

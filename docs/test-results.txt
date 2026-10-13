@@ -1,0 +1,68 @@
+PASS V14 boots and keeps label/icon editing in the main window
+PASS recover has a distinct effect without added outline boxes
+PASS protect has a distinct effect without added outline boxes
+PASS connect has a distinct effect without added outline boxes
+PASS converge has a distinct effect without added outline boxes
+PASS generate has a distinct effect without added outline boxes
+PASS validate has a distinct effect without added outline boxes
+PASS All six Hairline-inspired interactions respond to the pointed object and reset native SVG transforms
+PASS Goal card miniatures respond to pointer position
+PASS Reordering, durations and save/load still work
+PASS Animated HTML contains only the frame, embeds GSAP and supports hover reset/reduced motion
+PASS Figma text labels are fitted and centered automatically during upload
+PASS All matching tags grow together and keep the original font size
+PASS Icon and text pairs are centered independently with identical gaps
+PASS Growing tags and centered icons do not accumulate on repeated renders
+PASS Short and long labels have the same icon gap and retain font size
+PASS Centered pairs and fixed gaps survive project reload
+PASS SVG icon replacement fits the existing slot, namespaces references and strips scripts
+PASS Edited icons and centered labels survive save/load and standalone HTML export
+PASS Custom object controls remain functional
+PASS Safe Figma inline typography becomes SVG attributes without preserving unsafe styles
+PASS Magnet glow uses the actual tag border color
+PASS Cables trims stroked and filled connectors, avoids hover restart and restores original masks
+PASS Standalone export includes both effects without temporary preview masks
+PASS Upload also fits Figma tags without enclosing object groups
+PASS Uploaded outlined SVG gets an actionable explanation rather than unusable label controls
+PASS Professional copy, JSON labels and six explicit export formats
+PASS Animated SVG includes vector keyframes, masks, embedded font and reduced-motion fallback
+PASS Editable SVG stays editable and embeds its font
+PASS GIF, animated PNG and PNG frame export buttons complete and restore controls
+PASS Cancel discards unfinished animation exports and releases the export controls
+PASS Fine Tune V3 opens with the diagram, object list and controls already visible
+PASS Object controls change only the selected object
+PASS Preview Animation animates one complete logical object and leaves other objects still
+PASS Per-object click triggers use the selected duration without moving other objects
+PASS Preview backgrounds stay synchronized and never recolor the SVG
+PASS Save/load retains object-specific animations and preview background choice
+PASS Standalone HTML preserves per-object trigger, duration and logical-layer targets
+PASS Reset Object restores the selected style without resetting other objects or the diagram
+PASS An individual object can be previewed before applying the main animation
+PASS Auto background recognizes light artwork without modifying it
+PASS Main controls update defaults, generated beats and exports
+PASS Main defaults preserve individual overrides through save/load
+PASS Light mode adapts example neutral paints and uses the requested gradient
+PASS Dark mode restores example paints without editing source or animating surfaces
+PASS Standalone and raster animation exports retain the selected static surface
+PASS Example theme switching remains reversible after project reload
+PASS Each language has a unique actor and motion signature, with exact hover-out cleanup
+PASS The library has twelve thumbnail-only choices and a pinned upload action outside the scroller
+PASS Figma example 1 keeps editable labels/icons, logical objects, both themes and all six styles
+PASS Figma example 2 keeps editable labels/icons, logical objects, both themes and all six styles
+PASS Figma example 3 keeps editable labels/icons, logical objects, both themes and all six styles
+PASS Figma example 4 keeps editable labels/icons, logical objects, both themes and all six styles
+PASS Figma example 5 keeps editable labels/icons, logical objects, both themes and all six styles
+PASS Figma example 6 keeps editable labels/icons, logical objects, both themes and all six styles
+PASS Figma example 7 keeps editable labels/icons, logical objects, both themes and all six styles
+PASS Figma example 8 keeps editable labels/icons, logical objects, both themes and all six styles
+PASS New Figma examples retain logical mapping and reversible themes after save/load
+PASS All twelve previews and thumbnails use the same centered frame without stretching
+PASS Scan explicitly starts all labels at zero opacity and reveals them to one
+PASS Exact neutral color mapping works on uploads, strokes and gradient stops while masks remain intact
+PASS Visible artwork has identical fit despite different export whitespace; backgrounds and definitions do not affect scale
+PASS Every diagram uses the same raster export dimensions and matching Fine Tune frame
+PASS Branches follows true bent-path endpoints, activates recipients after relationships and retains discovery across beats
+PASS Cables conceals future routes initially, traverses causally at constant speed and intersects authored masks
+PASS Scan gives each label a complete reveal and reading interval, without moving objects
+PASS Magnet reuses tracking tweens, moves only the pointed node, preserves filters and restores exactly after a gentle return
+V21 modular functional checks passed with simulated SVG geometry and GSAP; real-browser visuals are not verified.
