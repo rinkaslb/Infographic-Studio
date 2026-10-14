@@ -7,6 +7,7 @@ function normalizeDiagramFrame(svg,measure=false,source=original){
  if(!svg)return;
  const natural=svg.getAttribute('viewBox')||'',v=natural.split(/[ ,]+/).map(Number);
  if(v.length!==4||!v.every(Number.isFinite)||v[2]<=0||v[3]<=0)return;
+ for(const [axis,extent] of [['width',v[2]],['height',v[3]]])if(!svg.hasAttribute('data-studio-source-'+axis)){const dimension=svg[axis]?.baseVal,value=dimension&&[1,5,6,7,8,9,10].includes(dimension.unitType)?dimension.value:extent;svg.setAttribute('data-studio-source-'+axis,String(value>0?value:extent));}
  if(!svg.hasAttribute('data-studio-source-viewbox'))svg.setAttribute('data-studio-source-viewbox',natural);
  let view=null;
  if(!measure&&source&&diagramFrameCache?.source===source)view=diagramFrameCache.view.slice();

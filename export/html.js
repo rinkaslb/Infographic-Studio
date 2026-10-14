@@ -2,7 +2,7 @@
 // V21: behavior-preserving extraction; compatibility globals remain in phase 1.
 async function exportInteractiveHtml(){
  if(!generatedStory)throw Error('Select an animation style before exporting animated HTML.');
- await Promise.all([engineReady,fontReady]);if(!gsapSource)throw Error('The animation engine is unavailable. Reopen the studio with an internet connection.');
+ await Promise.all([engineReady,fontReady]);exportCheck();if(!gsapSource)throw Error('The animation engine is unavailable. Reopen the studio with an internet connection.');
  const s=settings();
  const css=cyberFontCss+'.figure svg text,.figure svg tspan{font-family:Acronis Cyber,Arial,sans-serif}*{box-sizing:border-box}html,body{font-family:Acronis Cyber,Arial,sans-serif;margin:0;padding:0;background:transparent}.figure{width:100%;cursor:pointer;overflow:visible;background:'+(resolvedTone()==='light'?'linear-gradient(180deg,#ECF3FD 0%,#FFF 63.94%)':'linear-gradient(156deg,#001738 1.64%,#00357E 100.87%)')+';border:'+(resolvedTone()==='dark'?'1px solid #FFF7F7':'none')+'}.figure svg{overflow:visible}.figure:focus-visible,.story-layer:focus-visible{outline:2px solid #408bea;outline-offset:4px}'+extendedMotionCss(s);
  const data=safeJson({settings:s});

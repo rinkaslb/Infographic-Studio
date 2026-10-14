@@ -5,7 +5,7 @@ function preparedSvg(animateLayers=true,namespace='preview-',fineObjects=false){
  applyExampleTone(svg);const nodes=layerNodes(svg),active=new Set(activeLayers(nodes));let sequence=0;
  nodes.forEach((n,i)=>{
   if(fineObjects&&!isBackgroundLayer(n)){n.setAttribute('data-fine-index',i);n.setAttribute('data-fine-name',objectDisplayName(n,i));}
-  if(!animateLayers||!active.has(i))return;
+  if(!animateLayers||!active.has(i)){if(animateLayers&&!isBackgroundLayer(n)){n.setAttribute('data-context-index',i);n.setAttribute('data-layer-index',i);n.setAttribute('data-role',roles[i]);}return;}
   const wrapper=doc.createElementNS('http://www.w3.org/2000/svg','g');
   wrapper.setAttribute('class','motion-layer story-layer');wrapper.setAttribute('data-layer-index',String(i));
   wrapper.setAttribute('data-role',roles[i]);wrapper.setAttribute('data-layer-name',layerName(n,i));

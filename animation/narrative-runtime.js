@@ -1,12 +1,13 @@
 'use strict';
 // V21: behavior-preserving extraction; compatibility globals remain in phase 1.
 function createNarrativeRuntime(figure,s,onPhase=()=>{}){
- const svg=figure.querySelector('svg'),nodes=[...figure.querySelectorAll('.story-layer')],listeners=[];
+ const svg=figure.querySelector('svg'),nodes=[...figure.querySelectorAll('.story-layer')],contextNodes=[...figure.querySelectorAll('[data-context-index]')],listeners=[];
  const emphasis=Math.max(.1,Math.min(1,(Number(s.strength)||3)/10)),tempo=Math.max(.17,Math.min(1,(Number(s.duration)||1200)/1800));
  // Schedule at the reference speed, then scale every tween, pause and callback together.
  // Explicit timeline times keep preview, captures and embedded HTML exports identical.
  const durationScale=Math.max(.25,Math.min(5000/1200,(Number(s.duration)||1200)/1200));
- const intensity=node=>{const override=s.objectTuning?.[node?.dataset?.layerIndex],strength=override&&override.effect!=='auto'?override.strength:s.strength;return Math.max(0,Math.min(1,((Number(strength)||3)-1)/9));};
+ let animationScope=null,scopedStrength=null;
+ const intensity=node=>{if(scopedStrength!==null)return Math.max(0,Math.min(1,(scopedStrength-1)/9));const override=s.objectTuning?.[node?.dataset?.layerIndex],strength=override&&override.effect!=='auto'?override.strength:s.strength;return Math.max(0,Math.min(1,((Number(strength)||3)-1)/9));};
  function applyDuration(tl){
   const children=tl.getChildren(false,true,true).map(child=>({child,start:child.startTime(),duration:child.duration()}));
   for(const {child,start,duration} of children){child.duration(duration*durationScale);child.startTime(start*durationScale);}
@@ -52,19 +53,21 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
   for(const {path,length} of specs){try{
    const b=typeof path.getBBox==='function'?path.getBBox():box(path),stroke=Number.parseFloat(path.getAttribute('stroke-width'))||2,pad=Math.max(8,stroke*4),id=(figure.id||'story')+'-cable-trim-'+overlays.length,defs=overlay('cable-defs','defs',{}),mask=overlay('cable-mask','mask',{id,maskUnits:'userSpaceOnUse',maskContentUnits:'userSpaceOnUse',x:b.x-pad,y:b.y-pad,width:Math.max(1,b.width)+pad*2,height:Math.max(1,b.height)+pad*2},defs),attrs={};
    for(const a of path.attributes)if(['d','points','x1','x2','y1','y2'].includes(a.name))attrs[a.name]=a.value;
-   let tag=path.localName,reverse=false;
+   let tag=path.localName,reverse=false,traceLength=length;
    if(origin&&typeof path.getPointAtLength==='function'){
     const o=box(origin),ox=o.x+o.width/2,oy=o.y+o.height/2,rootMatrix=svg.getCTM?.(),pathMatrix=path.getCTM?.(),m=rootMatrix&&pathMatrix?rootMatrix.inverse().multiply(pathMatrix):{a:1,b:0,c:0,d:1,e:0,f:0},root=p=>({x:m.a*p.x+m.c*p.y+m.e,y:m.b*p.x+m.d*p.y+m.f}),closed=/[zZ]\s*$/.test(path.getAttribute('d')||'');
     if(closed){
      // Sample the existing outline from its nearest source point. No visible signal is added.
      const count=Math.min(256,Math.max(48,Math.ceil(length/4)));let anchor=0,best=Infinity;
      for(let i=0;i<count;i++){const p=root(path.getPointAtLength(i*length/count)),distance=Math.hypot(p.x-ox,p.y-oy);if(distance<best){best=distance;anchor=i*length/count;}}
-     const target=options.destination?box(options.destination):null;
-     let direction=1;if(target){const tx=target.x+target.width/2,ty=target.y+target.height/2,a=root(path.getPointAtLength((anchor+length*.08)%length)),z=root(path.getPointAtLength((anchor-length*.08+length)%length));if(Math.hypot(z.x-tx,z.y-ty)<Math.hypot(a.x-tx,a.y-ty))direction=-1;}
-     attrs.points=Array.from({length:count+1},(_,i)=>{const p=path.getPointAtLength(((anchor+direction*i*length/count)%length+length)%length);return p.x+','+p.y;}).join(' ');delete attrs.d;tag='polyline';
+     const target=options.destination?box(options.destination):null;let destination=(anchor+length/2)%length;
+     if(target){const tx=target.x+target.width/2,ty=target.y+target.height/2;let closest=Infinity;for(let i=0;i<count;i++){const distance=i*length/count,p=root(path.getPointAtLength(distance)),gap=Math.hypot(p.x-tx,p.y-ty);if(gap<closest){closest=gap;destination=distance;}}}
+     const forward=(destination-anchor+length)%length,direction=forward<=length/2?1:-1;traceLength=Math.max(.01,Math.min(forward,length-forward));
+     // Trace one side of a filled stroke, not a return trip around its closed outline.
+     const points=Math.max(2,Math.ceil(count*traceLength/length));attrs.points=Array.from({length:points+1},(_,i)=>{const p=path.getPointAtLength(((anchor+direction*i*traceLength/points)%length+length)%length);return p.x+','+p.y;}).join(' ');delete attrs.d;tag='polyline';
     }else{const a=root(path.getPointAtLength(0)),z=root(path.getPointAtLength(length));reverse=Math.hypot(z.x-ox,z.y-oy)<Math.hypot(a.x-ox,a.y-oy);}
    }
-   Object.assign(attrs,{fill:'none',stroke:'white','stroke-width':Math.max(6,stroke*3),'stroke-linecap':'round','stroke-linejoin':'round','stroke-dasharray':length+' '+length,'stroke-dashoffset':reverse?-length:length});
+   Object.assign(attrs,{fill:'none',stroke:'white','stroke-width':Math.max(6,stroke*3),'stroke-linecap':'round','stroke-linejoin':'round','stroke-dasharray':traceLength+' '+traceLength,'stroke-dashoffset':reverse?-traceLength:traceLength});
    const originalMask=snapshots.get(path)?.mask||options.originalMask,parent=originalMask?overlay('cable-original-mask','g',{mask:originalMask},mask):mask,trace=overlay('cable-trace',tag,attrs,parent),span=d*length/Math.max(1,total);
    tl.set(path,{attr:{mask:'url(#'+id+')'}},options.initAt??at);
    tl.to(trace,{attr:{'stroke-dashoffset':0},duration:span,ease:options.ease||'none'},at+elapsed);
@@ -80,20 +83,38 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
  }
  // Object overrides use the existing GSAP timeline and preserve logical SVG groups.
  const objectOverrides=s.objectTuning||{},objectKind=n=>objectOverrides[n.dataset.layerIndex];
- const presetObject=n=>!objectKind(n)||objectKind(n).effect==='auto';
- function customObject(tl,node,c,at=0){if(!node||c.effect==='auto'||c.effect==='none')return;const d=Math.max(.3,(Number(c.duration)||1200)/1000)/durationScale,strength=Math.max(1,Math.min(10,Number(c.strength)||3)),effect=c.effect.replace('visual-',''),amount=1+strength*.55;
-  if(effect==='flow'&&node.dataset.role==='Connector'){tl.set(node,{filter:originalFilter(node,'brightness('+(1+.6*intensity(node))+')')},at);trimCables(tl,[node],at,d);tl.set(node,{filter:originalFilter(node)},at+d);return;}
-  if(effect==='lift'){tl.to(node,{attr:{transform:'translate(0 '+(-amount)+')'},duration:d*.45,ease:'power3.out'},at);tl.to(node,{attr:{transform:'translate(0 0)'},duration:d*.55,ease:'power2.inOut'},at+d*.45);}
-  else if(effect==='pulse'||effect==='flow'||effect==='spotlight'){tl.to(node,{filter:originalFilter(node,'brightness('+(1+strength*.035)+')'),duration:d*.45,ease:'power2.out'},at);tl.to(node,{filter:originalFilter(node),duration:d*.55,ease:'power2.inOut'},at+d*.45);}
-  else if(effect==='reveal'){tl.set(node,{opacity:.15,attr:{transform:originalTransform(node,0,amount)}},at);tl.to(node,{opacity:1,attr:{transform:originalTransform(node)},duration:d,ease:'power3.out'},at);}
-  else if(effect==='orbit'){tl.to(node,{attr:{transform:'translate('+amount+' '+(-amount*.5)+')'},duration:d*.33,ease:'power2.inOut'},at);tl.to(node,{attr:{transform:'translate('+(-amount*.6)+' '+(amount*.3)+')'},duration:d*.34,ease:'power2.inOut'},at+d*.33);tl.to(node,{attr:{transform:'translate(0 0)'},duration:d*.33,ease:'power2.inOut'},at+d*.67);}
+ const presetObject=n=>animationScope?animationScope.includes(n):!objectKind(n)||objectKind(n).effect==='auto';
+ // Element overrides share the six motion languages and only touch their own relationships.
+ function customObject(tl,node,c,at=0){
+  if(!node||c.effect==='auto'||c.effect==='none')return;
+  const d=Math.max(.3,(Number(c.duration)||1200)/1000)/durationScale,links=node.dataset.role==='Connector'?[node]:connected([node]).filter(n=>!objectKind(n)||objectKind(n).effect==='auto'),savedScope=animationScope,savedStrength=scopedStrength,savedPlan=cablePlanCache,savedGraph=[...graphCache];
+  animationScope=c.effect==='branches'?[...nodes,...contextNodes]:[node,...links];scopedStrength=Math.max(1,Math.min(10,Number(c.strength)||3));cablePlanCache=null;graphCache.clear();
+  try{
+   if(c.effect==='branches'){
+    const plan=cablePlan(),related=plan.steps.filter(step=>step.part&&(step.link===node||step.to===node||step.activate===node)),steps=related.length?related:plan.steps.filter(step=>step.part&&(step.from===node||links.includes(step.link))),weight=steps.reduce((sum,step)=>sum+step.length,0);let elapsed=0;
+    for(const step of steps){const travel=d*.85*step.length/Math.max(1,weight);let path=step.part;if(step.fragment){path=overlay('flow-route','path',{d:step.fragment},step.part.parentNode);for(const attr of ['fill','stroke','transform'])if(step.part.hasAttribute(attr))path.setAttribute(attr,step.part.getAttribute(attr));path.style.opacity='0';}sendFlowSignal(tl,path,step.from,step.to,at+elapsed,travel);elapsed+=travel;const destination=step.to;if(destination!==node&&nodes.includes(destination)&&destination.dataset.role!=='Connector'&&(!objectKind(destination)||objectKind(destination).effect==='auto')){tl.set(destination,{filter:originalFilter(destination,tagGlow(destination))},at+elapsed);tl.to(destination,{filter:originalFilter(destination),duration:Math.min(d*.12,.1/durationScale),ease:'power2.out'},at+elapsed);}}
+    tl.to(node,{filter:originalFilter(node,tagGlow(node)),duration:d*.15,ease:'power2.out'},at+elapsed);tl.set(node,{filter:originalFilter(node)},at+d);
+   }else if(c.effect==='layers'&&node.dataset.role!=='Connector'){
+    buildLayers(tl,at,d);
+   }else if(c.effect==='scan'&&node.dataset.role!=='Connector'){
+    buildAnnotatedScan(tl,at,d);
+   }else if(c.effect==='cables'||['layers','scan'].includes(c.effect)&&node.dataset.role==='Connector'){
+    const draw=node.dataset.role==='Connector'?d:d*.7;trimCables(tl,links,at,draw,storyRoot(node),{ease:'none'});
+    if(node.dataset.role!=='Connector'){let b;try{b=node.getBBox();}catch(e){b=box(node);}const x=b.x+b.width/2,y=b.y+b.height/2,scale=1-(.005+intensity(node)*.075),pose=(snapshots.get(node)?.transform||'')+' translate('+x+' '+y+') scale('+scale+') translate('+(-x)+' '+(-y)+')';tl.set(node,{opacity:0,attr:{transform:pose}},at);tl.to(node,{opacity:baselineOpacity(node),attr:{transform:snapshots.get(node)?.transform||''},duration:d-draw,ease:'power2.out'},at+draw);}
+   }else if(c.effect==='riffle'){
+    const amount=screenUnit()*(1+intensity(node)*9);tl.set(node,{opacity:0,attr:{transform:originalTransform(node,0,amount)}},at);tl.to(node,{opacity:baselineOpacity(node),attr:{transform:snapshots.get(node)?.transform||''},duration:d,ease:'power2.out'},at);
+   }else if(c.effect==='magnet'){
+    const b=box(node),limit=screenUnit()*(.3+intensity(node)*1.7),x=Math.max(-limit,Math.min(limit,(base[0]+base[2]/2-b.x-b.width/2)*.035)),y=Math.max(-limit,Math.min(limit,(base[1]+base[3]/2-b.y-b.height/2)*.035));tl.to(node,{filter:originalFilter(node,tagGlow(node)),attr:{transform:originalTransform(node,x,y)},duration:d*.65,ease:'power3.out'},at);restorePose(tl,node,at+d*.65,d*.35);
+   }
+   tl.to({}, {duration:d},at);
+  }finally{animationScope=savedScope;scopedStrength=savedStrength;cablePlanCache=savedPlan;graphCache.clear();savedGraph.forEach(([key,value])=>graphCache.set(key,value));}
  }
 
  const hairlineKinds=['riffle','branches','layers','magnet','scan','cables'];
  function pointerKind(){const focus=s.beats?.[0]?.focus;return hairlineKinds.includes(focus)?focus:({recover:'riffle',protect:'branches',connect:'layers',converge:'magnet',generate:'scan',validate:'cables'}[s.preset]||'riffle');}
  // Six languages: hierarchy, relationships, separation, attention, reading, route.
- function objectNodes(){return nodes.filter(n=>n.dataset.role!=='Connector'&&presetObject(n));}
- function linkNodes(){return nodes.filter(n=>n.dataset.role==='Connector'&&presetObject(n));}
+ function objectNodes(){return (animationScope||nodes).filter(n=>n.dataset.role!=='Connector'&&presetObject(n));}
+ function linkNodes(){return (animationScope||nodes).filter(n=>n.dataset.role==='Connector'&&presetObject(n));}
  const graphCache=new Map();
  function screenUnit(){try{const m=svg.getScreenCTM?.()||svg.getCTM();const scale=Math.sqrt(Math.abs(m.a*m.d-m.b*m.c));if(scale>0)return 1/scale;}catch(e){}const width=svg.getBoundingClientRect?.().width;return width>0?base[2]/width:1;}
  function network(root){
@@ -133,7 +154,7 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
    tl.set(label,{attr:{'clip-path':'url(#'+id+')'},opacity:0},at);tl.to(label,{opacity:target,duration:Math.min(.08,d*.35),ease:'power2.out'},at);tl.to(rect,{attr:rtl?{x:b.x-1,width:b.width+2}:{width:b.width+2},duration:d,ease:'power2.out'},at);
   }catch(e){tl.set(label,{opacity:0},at);tl.to(label,{opacity:target,duration:d,ease:'power2.out'},at);}}
  // Build constructs outward, then holds the completed diagram without focus or breathing.
- function layersDuration(d){return Math.max(5.8,Math.min(7,d))*.37;}
+ function layersDuration(d){return Math.max(5.8,Math.min(7,d))*.34;}
  function buildLayers(tl,at,total){
   const objects=objectNodes(),links=linkNodes();if(!objects.length)return;
   const bounds=objects.map(box),cx=(Math.min(...bounds.map(b=>b.x))+Math.max(...bounds.map(b=>b.x+b.width)))/2,cy=(Math.min(...bounds.map(b=>b.y))+Math.max(...bounds.map(b=>b.y+b.height)))/2;
@@ -147,17 +168,17 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
    const b=box(node),x=b.x+b.width/2,y=b.y+b.height/2,part=allParts.slice().sort((a,b)=>{const A=box(a),B=box(b),gap=p=>Math.hypot(Math.max(p.x-x,0,x-p.x-p.width),Math.max(p.y-y,0,y-p.y-p.height));return gap(A)-gap(B);})[0];
    return part?[{part,link:links.find(link=>link.contains(part)),from:root,to:node}]:[];
   };
-  const routes=new Map(ordered.map(n=>[n,routeFor(n)])),built=new Set(),buildEnd=at+total,intro=Math.min(.45,total*.09),slot=(total-intro)/Math.max(1,ordered.length);
+  const routes=new Map(ordered.map(n=>[n,routeFor(n)])),built=new Set(),buildEnd=at+total,intro=Math.min(.4,total*.09),steps=ordered.map(node=>{const fresh=routes.get(node).filter(edge=>!built.has(edge.part));fresh.forEach(edge=>built.add(edge.part));return {node,fresh};}),unit=(total-intro)/Math.max(.32,steps.reduce((sum,step)=>sum+(step.fresh.length?1:.32),0));let elapsed=intro;
   // Only the central card is present initially. Its 3% scale is the sequence's only movement.
   objects.forEach(n=>tl.set(n,{opacity:n===root?baselineOpacity(n,.15):0},at));links.forEach(n=>tl.set(n,{opacity:0},at));
   let local;try{local=root.getBBox();}catch(error){local=box(root);}const px=local.x+local.width/2,py=local.y+local.height/2,scalePose=scale=>(snapshots.get(root)?.transform||'')+' translate('+px+' '+py+') scale('+scale+') translate('+(-px)+' '+(-py)+')';
   tl.set(root,{attr:{transform:scalePose(1-(.005+intensity(root)*.095))}},at);tl.to(root,{opacity:baselineOpacity(root),attr:{transform:scalePose(1)},duration:intro,ease:'power2.out'},at);tl.set(root,{attr:{transform:snapshots.get(root)?.transform||''}},at+intro);
-  ordered.forEach((node,i)=>{const start=at+intro+i*slot,route=routes.get(node),fresh=route.filter(edge=>!built.has(edge.part));fresh.forEach(edge=>built.add(edge.part));
-   fresh.forEach((edge,j)=>{tl.set(edge.link,{opacity:baselineOpacity(edge.link)},start);trimCables(tl,[edge.link],start+j*slot*.68/Math.max(1,fresh.length),slot*.68/Math.max(1,fresh.length),edge.from,{parts:[edge.part],destination:edge.to,initAt:at,ease:'power2.out'});});
-   tl.to(node,{opacity:baselineOpacity(node),duration:slot*.32,ease:'power2.out'},start+slot*.68);
+  steps.forEach(({node,fresh})=>{const start=at+elapsed,draw=fresh.length?unit*.68:0;
+   fresh.forEach((edge,j)=>{tl.set(edge.link,{opacity:baselineOpacity(edge.link)},start);trimCables(tl,[edge.link],start+j*draw/fresh.length,draw/fresh.length,edge.from,{parts:[edge.part],destination:edge.to,initAt:at,ease:'power2.out'});});
+   tl.to(node,{opacity:baselineOpacity(node),duration:unit*.32,ease:'power2.out'},start+draw);elapsed+=draw+unit*.32;
   });
-  const remaining=allParts.filter(part=>!built.has(part));remaining.forEach(part=>{const link=links.find(n=>n.contains(part));tl.set(link,{opacity:baselineOpacity(link)},at+intro);trimCables(tl,[link],at+intro,Math.max(.12,(buildEnd-at-intro)*.85),root,{parts:[part],initAt:at,ease:'power2.out'});});
-  links.filter(link=>!partsOf(link).length).forEach(link=>tl.to(link,{opacity:baselineOpacity(link),duration:.2,ease:'power2.out'},buildEnd-.2));
+  const remaining=allParts.filter(part=>!built.has(part));remaining.forEach(part=>{const link=links.find(n=>n.contains(part));tl.set(link,{opacity:baselineOpacity(link)},at+intro);trimCables(tl,[link],at+intro,Math.max(Math.min(.12,total*.2),(buildEnd-at-intro)*.85),root,{parts:[part],initAt:at,ease:'power2.out'});});
+  links.filter(link=>!partsOf(link).length).forEach(link=>tl.to(link,{opacity:baselineOpacity(link),duration:Math.min(.2,total*.2),ease:'power2.out'},buildEnd-Math.min(.2,total*.2)));
   allParts.forEach(part=>tl.set(part,{attr:{mask:snapshots.get(part)?.mask||'none'}},buildEnd));
   tl.to({}, {duration:total},at);
  }
@@ -177,7 +198,7 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
     const length=shape.getTotalLength();if(!(length>0&&length<100000))continue;
     const m=svg.getCTM().inverse().multiply(part.getCTM()),convert=p=>({x:m.a*p.x+m.c*p.y+m.e,y:m.b*p.x+m.d*p.y+m.f});let ends=[convert(shape.getPointAtLength(0)),convert(shape.getPointAtLength(length))];
     if(/[zZ]\s*$/.test(d)){const samples=Array.from({length:32},(_,i)=>convert(shape.getPointAtLength(length*i/32)));let far=-1;for(let i=0;i<samples.length;i++)for(let j=i+1;j<samples.length;j++){const separation=Math.hypot(samples[i].x-samples[j].x,samples[i].y-samples[j].y);if(separation>far){far=separation;ends=[samples[i],samples[j]];}}}
-    specs.push({part,link,fragment,length:length*Math.sqrt(Math.abs(m.a*m.d-m.b*m.c)),ends:ends.map(vertex)});
+    specs.push({part,link,fragment,length:length*(/[zZ]\s*$/.test(fragment||d) ? .5 : 1)*Math.sqrt(Math.abs(m.a*m.d-m.b*m.c)),ends:ends.map(vertex)});
    }catch(error){/* Non-geometric artwork remains unchanged and fades in after the network. */}}
   }
   const steps=[],seen=new Set(),visited=new Set(source?[source]:[]),queue=source?[source]:[];
@@ -235,7 +256,7 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
  function scanDuration(configured){return Math.max(configured,.7+objectNodes().length*.35);}
  function buildAnnotatedScan(tl,at,configured){
   const objects=objectNodes().slice().sort((a,b)=>box(a).x-box(b).x||box(a).y-box(b).y),links=linkNodes();if(!objects.length)return;
-  const total=scanDuration(configured),rank=new Map(objects.map((node,i)=>[node,i])),tasks=new Map(objects.map(node=>[node,[]])),labels=new Map(objects.map(node=>[node,readLabels(node)])),plan=cablePlan(),fragments=new Map(),rendered=new Set(),unit=screenUnit();
+  const total=animationScope?configured:scanDuration(configured),rank=new Map(objects.map((node,i)=>[node,i])),tasks=new Map(objects.map(node=>[node,[]])),labels=new Map(objects.map(node=>[node,readLabels(node)])),plan=cablePlan(),fragments=new Map(),rendered=new Set(),unit=screenUnit();
   const nearest=part=>{const b=box(part),x=b.x+b.width/2,y=b.y+b.height/2;return objects.slice().sort((a,b)=>{const A=box(a),B=box(b),gap=p=>Math.hypot(Math.max(p.x-x,0,x-p.x-p.width),Math.max(p.y-y,0,y-p.y-p.height));return gap(A)-gap(B);})[0];};
   plan.steps.filter(step=>step.part).forEach(step=>{const candidates=[step.from,step.to].filter(node=>rank.has(node)).sort((a,b)=>rank.get(a)-rank.get(b)),owner=candidates[0]||nearest(step.part);tasks.get(owner).push({...step,owner,destination:owner===step.to?step.from:step.to});});
   objects.forEach(node=>{const ownedLabels=labels.get(node);for(const part of node.querySelectorAll('path,line,polyline')){let name='',excluded=false;for(let parent=part;parent&&parent!==node;parent=parent.parentNode){name+=' '+(parent.id||parent.getAttribute('data-name')||'');if(['defs','mask','clipPath'].includes(parent.localName)||/icon/i.test(parent.id||parent.getAttribute('data-name')||''))excluded=true;}
@@ -288,7 +309,7 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
   ordered.forEach(node=>{sequence.push(node);seen.add(node);for(const link of pending){const ends=[...new Set(edges.filter(edge=>edge.link===link).flatMap(edge=>edge.ends))];if(ends.length&&ends.every(node=>seen.has(node))){sequence.push(link);pending.delete(link);}}});
   return [...sequence,...pending];
  }
- function revealDuration(configured){return Math.max(configured,Math.max(0,revealOrder().length-1)*.90+.24);}
+ function revealDuration(configured){const order=revealOrder(),longest=Math.max(0,...order.filter(node=>node.dataset.role!=='Connector').map(node=>readLabels(node).map(label=>label.textContent.trim()).join(' ').length)),interval=.94+Math.min(1.5,longest/55);return Math.max(configured,Math.max(0,order.length-1)*interval+.24);}
  function buildSimpleReveal(tl,at,configured){
   const order=revealOrder();if(!order.length)return;const total=revealDuration(configured),fade=.24,slot=order.length>1?(total-fade)/(order.length-1):0;
   order.forEach((node,i)=>{const start=at+i*slot,isCard=node.dataset.role!=='Connector';const distance=1+intensity(node)*9;let x=0,y=screenUnit()*distance;
@@ -339,13 +360,13 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
  }
  function buildFlow(tl,at,configured){
   const {plan,steps,total,extra}=flowTiming(configured),{objects,links,source}=plan;if(!source)return;
-  const length=step=>{if(step.length>0)return step.length;if(step.fallback){const b=box(step.link);return Math.max(1,b.width+b.height);}return 0;},weight=steps.reduce((sum,step)=>sum+length(step),0);let elapsed=.14,focused=source;
+  const length=step=>{if(step.length>0)return step.length;if(step.fallback){const b=box(step.link);return Math.max(1,b.width+b.height);}return 0;},weight=steps.reduce((sum,step)=>sum+length(step),0),travelBudget=steps.filter(step=>step.part||step.fallback).length*.30+extra;let elapsed=.14,focused=source;
   objects.forEach(node=>tl.set(node,{opacity:baselineOpacity(node),filter:originalFilter(node,node===source?tagGlow(node):'')},at));
   // The complete network exists before transmission; only the information moves.
   links.forEach(link=>tl.set(link,{opacity:baselineOpacity(link)},at));
   tl.to({}, {duration:.14},at);
   steps.forEach((step,i)=>{
-   const start=at+elapsed,travel=(step.part||step.fallback) ? .30+extra*length(step)/Math.max(Number.EPSILON,weight) : 0;let path=step.part;
+   const start=at+elapsed,travel=(step.part||step.fallback) ? travelBudget*length(step)/Math.max(Number.EPSILON,weight) : 0;let path=step.part;
    if(step.fragment){const attrs={};for(const a of path.attributes)if(!['id','mask'].includes(a.name))attrs[a.name]=a.value;attrs.d=step.fragment;path=overlay('flow-route','path',attrs,path.parentNode);path.style.opacity='0';}
    if(path)sendFlowSignal(tl,path,step.from,step.to,start,travel);
    elapsed+=travel;
@@ -366,7 +387,7 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
   }else if(kind==='layers'){
    buildLayers(tl,at,stage===null?layersDuration(d):d);
   }else if(kind==='magnet'){
-   if(stage!==null)objects.filter(n=>n!==hero).forEach(n=>restorePose(tl,n,at,Math.min(.22,d*.3)));const c=tune(hero,d),unit=screenUnit(),limit=unit*(2.2+c.strength*.15),x=Math.max(-limit,Math.min(limit,(point.x-cx)*.055)),y=Math.max(-limit,Math.min(limit,(point.y-cy)*.055));tl.to(hero,{attr:{transform:originalTransform(hero,x,y)},opacity:baselineOpacity(hero),filter:originalFilter(hero,tagGlow(hero)),duration:Math.min(.18,c.duration,d*.5),ease:'power3.out',overwrite:'auto'},at);
+   if(stage!==null)objects.filter(n=>n!==hero).forEach(n=>restorePose(tl,n,at,Math.min(.22,d*.3)));const c=tune(hero,d),unit=screenUnit(),limit=unit*(1.4+c.strength*.12),x=Math.max(-limit,Math.min(limit,(point.x-cx)*.055)),y=Math.max(-limit,Math.min(limit,(point.y-cy)*.055));tl.to(hero,{attr:{transform:originalTransform(hero,x,y)},opacity:baselineOpacity(hero),filter:originalFilter(hero,tagGlow(hero)),duration:Math.min(.32,c.duration,d*.45),ease:'power3.out',overwrite:'auto'},at);
   }else if(kind==='scan'){
    buildAnnotatedScan(tl,at,d);
   }else if(kind==='cables'){
@@ -386,11 +407,11 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
  function release(){reset();}
  function engage(active,point){if(!active||reduced()||!globalThis.gsap)return;const kind=pointerKind(),c=objectKind(active);
   if(['riffle','branches','layers','cables','scan'].includes(kind)&&objectTrigger(active)==='hover'&&presetObject(active)&&hoverActive&&pointerTimeline&&!timeline&&presetObject(hoverActive))return;
-  if(kind==='magnet'&&(!c||c.effect==='auto')){highlightMagnet(active);}else{if(hoverActive===active&&pointerTimeline)return;reset();hoverActive=active;if(c?.effect==='none')return;pointerTimeline=gsap.timeline({paused:true});if(c&&c.effect!=='auto')customObject(pointerTimeline,active,c);else language(pointerTimeline,kind,active,point);applyDuration(pointerTimeline).play(0);}
+  if(c?.effect==='magnet'||kind==='magnet'&&(!c||c.effect==='auto')){highlightMagnet(active);}else{if(hoverActive===active&&pointerTimeline)return;reset();hoverActive=active;if(c?.effect==='none')return;pointerTimeline=gsap.timeline({paused:true});if(c&&c.effect!=='auto')customObject(pointerTimeline,active,c);else language(pointerTimeline,kind,active,point);applyDuration(pointerTimeline).play(0);}
   const phase=(s.beats||[]).findIndex(b=>b.indices.includes(+active.dataset.layerIndex)),value=phase<0?0:phase;if(lastHoverPhase!==value){lastHoverPhase=value;onPhase(value,false);}
  }
- function objectTrigger(n){return objectKind(n)?.trigger||s.trigger;}
- function respond(e){if(e.pointerType==='touch'||reduced()||s.trigger==='manual')return;const found=locate(e);if(found&&objectTrigger(found.active)==='hover'){if(objectKind(found.active)?.effect!=='auto'&&objectKind(found.active)&&hoverActive===found.active&&pointerTimeline)return;engage(found.active,found.point);}else if(!hoverActive||objectTrigger(hoverActive)==='hover'){release();}}
+ function objectTrigger(n){const trigger=objectKind(n)?.trigger,effective=trigger==='auto'&&objectKind(n)?.effect==='auto'?s.trigger:trigger||s.trigger;return effective==='auto'?'hover':effective;}
+ function respond(e){if(e.pointerType==='touch'||reduced()||s.trigger==='manual')return;const found=locate(e);if(found&&objectTrigger(found.active)==='hover'){if(objectKind(found.active)?.effect!=='auto'&&objectKind(found.active)&&hoverActive===found.active&&pointerTimeline)return;engage(found.active,found.point);}else if(hoverActive&&objectTrigger(hoverActive)==='hover'){release();}}
  function focusBeat(tl,focus,active,stage,at,d,allLinks,source,process,outcome){
   active=active.filter(presetObject);if(hairlineKinds.includes(focus)){const hero=focus==='cables'?(active.find(n=>n.dataset.role==='Connector')||connected(active)[0]||nodes.find(n=>n.dataset.role==='Connector'&&presetObject(n))):(active.find(n=>n.dataset.role!=='Connector')||active[0]||objectNodes()[stage%Math.max(1,objectNodes().length)]);if(hero){const b=box(hero);language(tl,focus,hero,{x:b.x+b.width/2+28,y:b.y+b.height/2-20},at,d,stage);}return;}
   const objects=nodes.filter(n=>n.dataset.role!=='Connector'&&presetObject(n)),tags=objects.filter(n=>n.querySelector('text')||n.dataset.role==='Outcome');
@@ -406,8 +427,9 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
  }
  function play(single=null){reset();if(!nodes.length||reduced()||!globalThis.gsap)return;
   const defaults={recover:['riffle','riffle','riffle'],protect:['branches','branches','branches'],connect:['layers','layers','layers'],converge:['magnet','magnet','magnet'],generate:['scan','scan','scan'],validate:['cables','cables','cables']};
+  if(Number.isInteger(s.previewObject)){const node=nodes.find(n=>+n.dataset.layerIndex===s.previewObject);if(!node)return;const c=objectKind(node)||{effect:'auto'},config=c.effect==='auto'?{...c,effect:pointerKind(),duration:s.duration,strength:s.strength}:c;timeline=gsap.timeline({paused:true,onComplete:()=>onPhase(0,true)});onPhase(0,false);customObject(timeline,node,config);applyDuration(timeline).play(0);return;}
   const beats=(s.beats||[]).map((b,i)=>({...b,index:i})),sequence=single===null?beats:beats.filter((b,i)=>i===single);if(!sequence.length)return;narrativeBudget=sequence.reduce((total,b)=>total+Math.max(.3,b.duration/1000),0);
-  const tl=timeline=gsap.timeline({paused:true,defaults:{ease:'power2.inOut'},onComplete:()=>{figure.classList.remove('story-playing');onPhase(sequence.at(-1).index,true);}});figure.classList.add('story-playing');let at=0;const customPlayed=new Set();
+  const tl=timeline=gsap.timeline({paused:true,defaults:{ease:'power2.inOut'},onComplete:()=>{figure.classList.remove('story-playing');onPhase(sequence.at(-1).index,true);}});figure.classList.add('story-playing');let at=0;
   const source=nodes.filter(n=>n.dataset.role==='Source'),process=nodes.filter(n=>n.dataset.role==='Process'),outcome=nodes.filter(n=>n.dataset.role==='Outcome'),allLinks=nodes.filter(n=>n.dataset.role==='Connector'&&presetObject(n));
   const kinds=sequence.map(b=>b.focus||defaults[s.preset]?.[b.stage??b.index]);if(kinds.includes('build')||kinds.includes('coverage'))tl.set(nodes,{opacity:0},0);if(kinds.includes('tags')||kinds.includes('relationship'))tl.set(nodes.filter(n=>n.dataset.role!=='Connector'&&(n.querySelector('text')||n.dataset.role==='Outcome')),{opacity:0},0);
   const beatDurations=sequence.map(beat=>Math.max(.3,beat.duration/1000)/durationScale),layersRuns=new Map(),cableRuns=new Map(),scanRuns=new Map(),revealRuns=new Map(),branchRuns=new Map();
@@ -417,7 +439,8 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
   for(let i=0;i<sequence.length;i++){if(kinds[i]!=='riffle')continue;let end=i+1;while(end<sequence.length&&kinds[end]==='riffle')end++;const configured=beatDurations.slice(i,end).reduce((sum,d)=>sum+d,0),total=revealDuration(configured);revealRuns.set(i,total);for(let j=i;j<end;j++)beatDurations[j]*=total/configured;i=end-1;}
   for(let i=0;i<sequence.length;i++){if(kinds[i]!=='branches')continue;let end=i+1;while(end<sequence.length&&kinds[end]==='branches')end++;const configured=beatDurations.slice(i,end).reduce((sum,d)=>sum+d,0),total=flowDuration(configured);branchRuns.set(i,total);for(let j=i;j<end;j++)beatDurations[j]*=total/configured;i=end-1;}
   narrativeBudget=beatDurations.reduce((sum,d)=>sum+d,0);
-  sequence.forEach((beat,index)=>{const d=beatDurations[index],stage=beat.stage??beat.index,active=nodes.filter(n=>beat.indices.includes(+n.dataset.layerIndex)),focus=beat.focus||defaults[s.preset]?.[stage]||'camera';tl.addLabel('beat-'+beat.index,at);tl.call(()=>onPhase(beat.index,false),null,at);if((focus!=='layers'||layersRuns.has(index))&&(focus!=='cables'||cableRuns.has(index))&&(focus!=='scan'||scanRuns.has(index))&&(focus!=='riffle'||revealRuns.has(index))&&(focus!=='branches'||branchRuns.has(index)))focusBeat(tl,focus,active,stage,at,layersRuns.get(index)||cableRuns.get(index)||scanRuns.get(index)||revealRuns.get(index)||branchRuns.get(index)||d,allLinks,source,process,outcome);active.forEach(n=>{const c=objectKind(n);if(c&&c.effect!=='auto'&&!customPlayed.has(n)){customObject(tl,n,c,at);customPlayed.add(n);}});tl.to({}, {duration:d},at);at+=d;});
+  sequence.forEach((beat,index)=>{const d=beatDurations[index],stage=beat.stage??beat.index,active=nodes.filter(n=>beat.indices.includes(+n.dataset.layerIndex)),focus=beat.focus||defaults[s.preset]?.[stage]||'camera';tl.addLabel('beat-'+beat.index,at);tl.call(()=>onPhase(beat.index,false),null,at);if((focus!=='layers'||layersRuns.has(index))&&(focus!=='cables'||cableRuns.has(index))&&(focus!=='scan'||scanRuns.has(index))&&(focus!=='riffle'||revealRuns.has(index))&&(focus!=='branches'||branchRuns.has(index)))focusBeat(tl,focus,active,stage,at,layersRuns.get(index)||cableRuns.get(index)||scanRuns.get(index)||revealRuns.get(index)||branchRuns.get(index)||d,allLinks,source,process,outcome);tl.to({}, {duration:d},at);at+=d;});
+  nodes.forEach(node=>{const c=objectKind(node);if(c&&c.effect!=='auto'&&c.effect!=='none'&&c.trigger!=='hover'&&c.trigger!=='click'){customObject(tl,node,c,at);at+=Math.max(.3,(Number(c.duration)||1200)/1000)/durationScale;}});
   applyDuration(tl).play(0);
  }
 
@@ -426,8 +449,9 @@ function createNarrativeRuntime(figure,s,onPhase=()=>{}){
  if(s.mode==='nodes'){nodes.forEach(n=>{n.setAttribute('tabindex','0');n.setAttribute('role','button');n.setAttribute('aria-label',n.dataset.layerName);listen(n,'focus',()=>{if(objectTrigger(n)==='hover')focusNode(n);});listen(n,'blur',()=>{if(objectTrigger(n)==='hover')release();});listen(n,'click',e=>{e.stopPropagation();if(objectTrigger(n)==='click'||e.detail===0){const found=locate(e);engage(n,found?.point||{x:box(n).x,y:box(n).y});}});listen(n,'keydown',e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();e.stopPropagation();focusNode(n);}});});}
  listen(figure,'pointerenter',e=>{if(hairlineKinds.includes(s.beats?.[0]?.focus)||Object.keys(objectOverrides).length)respond(e);else if(s.trigger==='hover')play();});listen(figure,'pointermove',e=>{if(hairlineKinds.includes(s.beats?.[0]?.focus)||Object.keys(objectOverrides).length)respond(e);});
  listen(figure,'focus',()=>{if(s.trigger==='hover')play();});listen(figure,'click',e=>{if(s.trigger==='click'){if(hairlineKinds.includes(s.beats?.[0]?.focus)){const found=locate(e);if(found)engage(found.active,found.point);else play();}else play();}});
- listen(figure,'pointerleave',()=>{if(s.trigger==='hover'&&(!hoverActive||objectTrigger(hoverActive)==='hover'))release();});listen(figure,'blur',e=>{if(!figure.contains(e.relatedTarget)&&s.trigger==='hover'&&(!hoverActive||objectTrigger(hoverActive)==='hover'))release();});listen(figure,'keydown',e=>{if(e.target===figure&&['Enter',' '].includes(e.key)){e.preventDefault();play();}});
+ listen(figure,'pointerleave',()=>{if((s.trigger==='hover'||s.trigger==='auto'&&hoverActive)&&(!hoverActive||objectTrigger(hoverActive)==='hover'))release();});listen(figure,'blur',e=>{if(!figure.contains(e.relatedTarget)&&(s.trigger==='hover'||s.trigger==='auto'&&hoverActive)&&(!hoverActive||objectTrigger(hoverActive)==='hover'))release();});listen(figure,'keydown',e=>{if(e.target===figure&&['Enter',' '].includes(e.key)){e.preventDefault();play();}});
  const changed=()=>{if(reduced())reset();};media.addEventListener?.('change',changed);listeners.push(()=>media.removeEventListener?.('change',changed));
+ if(s.trigger==='auto')play();
  return {play,previewBeat,reset,destroy(){reset();listeners.forEach(f=>f());},get timeline(){return timeline;},get pointerTimeline(){return pointerTimeline;}};
 }
 

@@ -8,7 +8,7 @@ const parser=new DOMParser();let diagramFrameCache=null;
 const stories={pulse:{name:'Emphasis pulse'},flow:{name:'Connector emphasis'},reveal:{name:'Sequential Reveal'},spotlight:{name:'Spotlight'},orbit:{name:'Orbit Focus'}};
 const roleNames=['Source','Process','Outcome','Connector'];
 const narratives={recover:{name:'Reveal'},protect:{name:'Flow'},connect:{name:'Build'},converge:{name:'Magnet'},generate:{name:'Scan'},validate:{name:'Connections'}};
-let workflow='story',workflowDrafts={story:{preset:'recover',trigger:'hover',strength:3},custom:{effect:'lift',trigger:'hover',duration:1200,strength:3,reduced:false,mode:'entire'}};
+let workflow='story',workflowDrafts={story:{preset:'recover',trigger:'auto',strength:3},custom:{effect:'lift',trigger:'auto',duration:1200,strength:3,reduced:false,mode:'entire'}};
 let manualRoles={},animationMode='entire',storyRuntime=null;
 
 const focusNames={riffle:'Reveal · Progressive reveal',branches:'Flow · Information flow',layers:'Build · Step-by-step build',magnet:'Magnet · Gather elements',scan:'Scan · Scan & annotate',cables:'Connections · Build relationships',draw:'Draw artwork',build:'Wipe artwork left to right',tags:'Reveal tags',shadow:'Label shadow',spotlight:'Spotlight',flow:'Connector emphasis',connector:'Connector Focus',coverage:'Coverage Focus',relationship:'Relationship Focus',central:'Central Object Focus',result:'Result Focus',status:'Status Focus',camera:'Camera Focus'};

@@ -65,7 +65,7 @@ function resizeTagPath(path,center,delta){
 }
 function fitDiagramLabels(svg){
  if(!svg)return;const doc=parser.parseFromString(original,'image/svg+xml'),source=doc.documentElement,labels=editableSvgLabels(svg),targets=editableSvgLabels(source),all=[...svg.querySelectorAll('rect,path')],raw=[...source.querySelectorAll('rect,path')],records=[];
- const baseView=(source.getAttribute('data-v10-base-viewbox')||source.getAttribute('viewBox')).split(/[ ,]+/).map(Number);source.setAttribute('data-v10-base-viewbox',baseView.join(' '));
+ const baseView=(source.getAttribute('data-v10-base-viewbox')||source.getAttribute('viewBox')).split(/[ ,]+/).map(Number);source.setAttribute('data-v10-base-viewbox',baseView.join(' '));const currentViewWidth=Number((source.getAttribute('viewBox')||'').split(/[ ,]+/)[2])||baseView[2],basePixelWidth=Number(source.getAttribute('data-v10-base-source-width'))||(Number(source.getAttribute('data-studio-source-width'))||currentViewWidth)*baseView[2]/currentViewWidth;source.setAttribute('data-v10-base-source-width',basePixelWidth);
  const inDefs=n=>{for(let p=n;p&&p!==svg;p=p.parentNode)if(['defs','mask','clipPath'].includes(p.localName))return true;return false;};
  // Restore icon placement as well as tag geometry before measuring.
  const icons=svgIconNodes(svg),sourceIcons=svgIconNodes(source);
@@ -132,7 +132,7 @@ function fitDiagramLabels(svg){
   }
   const target=r.target;target.removeAttribute('dx');target.removeAttribute('dy');for(const attr of ['x','y','font-size','text-anchor'])target.setAttribute(attr,r.node.getAttribute(attr));
  }catch(e){}});
- const view=[baseView[0],baseView[1],right-baseView[0],baseView[3]].join(' ');svg.setAttribute('viewBox',view);source.setAttribute('viewBox',view);if(source.hasAttribute('width'))source.setAttribute('width',right-baseView[0]);
+ const view=[baseView[0],baseView[1],right-baseView[0],baseView[3]].join(' ');svg.setAttribute('viewBox',view);source.setAttribute('viewBox',view);const sourcePixels=basePixelWidth*(right-baseView[0])/baseView[2];svg.setAttribute('data-studio-source-width',sourcePixels);source.setAttribute('data-studio-source-width',sourcePixels);if(source.hasAttribute('width'))source.setAttribute('width',right-baseView[0]);
  // Extend full-canvas rectangles as static artwork when the frame grows.
  [...svg.querySelectorAll('rect')].forEach(n=>{if(inDefs(n))return;const x=+n.getAttribute('x')||0,y=+n.getAttribute('y')||0,h=+n.getAttribute('height'),w=+(n.getAttribute('data-canvas-base-width')||n.getAttribute('width'));if(Math.abs(x-baseView[0])<2&&Math.abs(y-baseView[1])<2&&Math.abs(w-baseView[2])<2&&Math.abs(h-baseView[3])<2){n.setAttribute('data-canvas-base-width',w);n.setAttribute('width',w+(right-baseView[0]-baseView[2]));const originalNode=raw[all.indexOf(n)];if(originalNode){originalNode.setAttribute('data-canvas-base-width',w);originalNode.setAttribute('width',n.getAttribute('width'));}}});
  original=new XMLSerializer().serializeToString(source);

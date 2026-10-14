@@ -24,7 +24,7 @@ validate:{headline:'Build relationships first.',takeaway:'',beats:['Establish th
 });
 function currentTuning(){return {effect:$('effect').value,trigger:$('trigger').value,duration:+$('duration').value,strength:+$('strength').value,reduced:$('reduced').checked,mode:animationMode,layers:[...selected],roles:{...manualRoles}};}
 function applyTuning(t){$('effect').value=t.effect;$('trigger').value=t.trigger;$('duration').value=t.duration;$('strength').value=t.strength;$('reduced').checked=t.reduced;animationMode=t.mode;selected=new Set(t.layers);manualRoles={...t.roles};captureWorkflow();}
-function resetDraft(){timelinePreviewRuntime?.destroy();timelinePreviewRuntime=null;$('timelineFrame').hidden=true;generatedStory=null;previewVersion='original';$('effect').value='auto';$('duration').value=1200;$('strength').value=3;$('reduced').checked=false;animationMode='entire';workflow='story';baseTuning=currentTuning();syncWorkflow();}
+function resetDraft(){timelinePreviewRuntime?.destroy();timelinePreviewRuntime=null;$('timelineFrame').hidden=true;generatedStory=null;previewVersion='original';$('effect').value='auto';applyMotionDefault();$('reduced').checked=false;animationMode='entire';workflow='story';baseTuning=currentTuning();syncWorkflow();}
 function updateMappings(){
  if(!generatedStory)return;const nodes=layerNodes(parser.parseFromString(original,'image/svg+xml').documentElement),roles=inferredRoles(),indices=activeLayers(nodes);
  const objectIndices=indices.filter(i=>roles[i]!=='Connector');
@@ -40,7 +40,7 @@ function inspectBeat(index){if(!generatedStory)return;if($('effect').value==='au
 function setPreview(version){previewVersion=version==='story'&&generatedStory?'story':'original';render();}
 function generate(){
  const goal=$('storyPreset').value,r=recipes[goal];generatedStory={goal,headline:r.headline,takeaway:r.takeaway,beats:r.beats.map((text,stage)=>({text,stage,focus:defaultFocus(goal,stage),duration:+$('duration').value,indices:[]}))};
- $('effect').value='auto';workflow='story';previewVersion='story';baseTuning=currentTuning();captureWorkflow();drawBeats();showLayers();render();animate();
+ $('effect').value='auto';workflow='story';previewVersion='story';baseTuning=currentTuning();captureWorkflow();drawBeats();showLayers();render();if($('trigger').value!=='auto')animate();
 }
 function openFine(){closeExport();migrateGlobalMotion();animationMode='nodes';render();drawerOpener=document.activeElement;$('fineDrawer').hidden=$('fineBackdrop').hidden=false;mountFinePreview();document.querySelector('main').inert=true;document.querySelector('header').inert=true;$('closeFine').focus();}
 function closeFine(){fineRuntime?.destroy();fineRuntime=null;timelinePreviewRuntime?.destroy();timelinePreviewRuntime=null;document.querySelector('main').inert=false;document.querySelector('header').inert=false;$('fineDrawer').hidden=$('fineBackdrop').hidden=true;drawerOpener?.focus();}

@@ -227,6 +227,8 @@
     "file": "export/jobs.js",
     "functions": [
       "exportProgress",
+      "paintExportProgress",
+      "exportYield",
       "exportCheck",
       "runAssetExport"
     ],
@@ -241,8 +243,11 @@
       "svgString",
       "svgPixels",
       "exportSize",
+      "holdsCompletedAnimation",
       "createExportCapture",
-      "cycleTime"
+      "cycleTime",
+      "exportFramePlan",
+      "exportFrameDelay"
     ],
     "sourceStart": 824,
     "sourceEnd": 836
@@ -293,6 +298,9 @@
       "gifU16",
       "gifHeader",
       "gifFrame",
+      "gifDelta",
+      "gifWorkerMain",
+      "createGifEncoder",
       "exportGifPixels",
       "exportAnimatedGif"
     ],
@@ -302,6 +310,14 @@
   {
     "file": "ui/main-tuning.js",
     "functions": [
+      "validMotionValues",
+      "readMotionDefault",
+      "motionPresetFor",
+      "currentMotionPreset",
+      "applyMotionDefault",
+      "syncMotionPresets",
+      "applyMotionPreset",
+      "saveMotionDefault",
       "syncMainTuning",
       "updateMainTuning"
     ],
@@ -311,8 +327,10 @@
   {
     "file": "state/object-settings.js",
     "functions": [
+      "normalizeObjectStyle",
       "readObjectTuning",
-      "objectConfig"
+      "objectConfig",
+      "globalObjectStyle"
     ],
     "sourceStart": 889,
     "sourceEnd": 893
